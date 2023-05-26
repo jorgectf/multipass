@@ -211,7 +211,7 @@ _multipass_complete()
     cmd="${COMP_WORDS[1]}"
     prev_opts=false
     multipass_cmds="authenticate transfer delete exec find help info launch list mount networks \
-                    purge recover shell start stop suspend restart umount version get set \
+                    purge recover restart restore shell snapshot start stop suspend umount version get set \
                     alias aliases unalias"
 
     if [[ "${multipass_cmds}" =~ " ${cmd} " || "${multipass_cmds}" =~ ^${cmd} || "${multipass_cmds}" =~ \ ${cmd}$ ]];
@@ -224,7 +224,7 @@ _multipass_complete()
             opts="${opts} --working-directory --no-map-working-directory"
         ;;
         "info")
-            opts="${opts} --all --format"
+            opts="${opts} --all --snapshot-overview --format"
         ;;
         "list"|"ls")
             opts="${opts} --format"
@@ -259,6 +259,12 @@ _multipass_complete()
         ;;
         "transfer"|"copy-files")
             opts="${opts} --parents --recursive"
+        ;;
+        "snapshot")
+            opts="${opts} --name --comment"
+        ;;
+        "restore")
+            opts="${opts} --destructive"
         ;;
     esac
 
@@ -336,6 +342,9 @@ _multipass_complete()
             ;;
             "recover")
                 _multipass_instances "Deleted"
+            ;;
+            "snapshot"|"restore")
+                _multipass_instances "Stopped"
             ;;
             "mount")
                 local source_set=0
