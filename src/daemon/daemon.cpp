@@ -449,11 +449,6 @@ auto fetch_image_for(const std::string& name, const mp::FetchType& fetch_type, m
     return vault.fetch_image(fetch_type, query, stub_prepare, stub_progress, false, std::nullopt);
 }
 
-QDir instance_directory(const std::string& instance_name, const mp::DaemonConfig& config)
-{ // TODO should we establish a more direct way to get to the instance's directory?
-    return mp::utils::base_dir(fetch_image_for(instance_name, config.factory->fetch_type(), *config.vault).image_path);
-}
-
 auto try_mem_size(const std::string& val) -> std::optional<mp::MemorySize>
 {
     try
@@ -1290,7 +1285,7 @@ mp::Daemon::Daemon(std::unique_ptr<const DaemonConfig> the_config)
 
         auto& instance_record = spec.deleted ? deleted_instances : operative_instances;
         auto instance = instance_record[name] = config->factory->create_virtual_machine(vm_desc, *this);
-        instance->load_snapshots(instance_directory(name, *config));
+        instance->load_snapshots();
 
         allocated_mac_addrs = std::move(new_macs); // Add the new macs to the daemon's list only if we got this far
 
@@ -2236,7 +2231,7 @@ try // clang-format on
                     assert(purge && "precondition: snapshots can only be purged");
 
                     for (const auto& snapshot_name : instance_snapshots_map[instance_name])
-                        vm_it->second->delete_snapshot(instance_directory(instance_name, *config), snapshot_name);
+                        vm_it->second->delete_snapshot(snapshot_name);
                 }
             }
         }
@@ -2471,8 +2466,7 @@ try
         SnapshotReply reply;
 
         {
-            const auto snapshot = vm_ptr->take_snapshot(instance_directory(instance_name, *config), spec_it->second,
-                                                        snapshot_name, request->comment());
+            const auto snapshot = vm_ptr->take_snapshot(spec_it->second, snapshot_name, request->comment());
 
             reply.set_snapshot(snapshot->get_name());
         }
@@ -2518,20 +2512,19 @@ try
         auto spec_it = vm_instance_specs.find(instance_name);
         assert(spec_it != vm_instance_specs.end() && "missing instance specs");
 
-        const auto& vm_dir = instance_directory(instance_name, *config);
         if (!request->destructive())
         {
             reply_msg(server, fmt::format("Taking snapshot before restoring {}", instance_name));
 
-            const auto snapshot = vm_ptr->take_snapshot(vm_dir, spec_it->second, "",
-                                                        fmt::format("Before restoring {}", request->snapshot()));
+            const auto snapshot =
+                vm_ptr->take_snapshot(spec_it->second, "", fmt::format("Before restoring {}", request->snapshot()));
 
             reply_msg(server, fmt::format("Snapshot taken: {}.{}", instance_name, snapshot->get_name()),
                       /* sticky = */ true);
         }
 
         reply_msg(server, "Restoring snapshot");
-        vm_ptr->restore_snapshot(vm_dir, request->snapshot(), spec_it->second);
+        vm_ptr->restore_snapshot(request->snapshot(), spec_it->second);
         persist_instances();
 
         server->Write(reply);
