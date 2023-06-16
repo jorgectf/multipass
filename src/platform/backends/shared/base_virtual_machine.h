@@ -42,8 +42,8 @@ namespace multipass
 class BaseVirtualMachine : public VirtualMachine
 {
 public:
-    BaseVirtualMachine(VirtualMachine::State state, const std::string& vm_name);
-    BaseVirtualMachine(const std::string& vm_name);
+    BaseVirtualMachine(VirtualMachine::State state, const std::string& vm_name, const mp::Path& instance_dir);
+    BaseVirtualMachine(const std::string& vm_name, const mp::Path& instance_dir);
 
     std::vector<std::string> get_all_ipv4(const SSHKeyProvider& key_provider) override;
     std::unique_ptr<MountHandler> make_native_mount_handler(const SSHKeyProvider* ssh_key_provider,
@@ -70,6 +70,8 @@ public:
     void load_snapshots(const QDir& snapshot_dir) override;
 
 protected:
+    BaseVirtualMachine(const std::string& vm_name);
+
     virtual std::shared_ptr<Snapshot> make_specific_snapshot(const QJsonObject& json) = 0;
     virtual std::shared_ptr<Snapshot> make_specific_snapshot(const std::string& name, const std::string& comment,
                                                              const VMSpecs& specs,
