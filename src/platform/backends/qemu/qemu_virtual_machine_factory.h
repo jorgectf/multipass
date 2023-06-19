@@ -44,6 +44,8 @@ public:
     std::vector<NetworkInterfaceInfo> networks() const override;
 
 private:
+    Path make_qemu_platform_and_resolve_instances_dir(const Path& data_dir);
+
     QemuPlatform::UPtr qemu_platform;
 };
 } // namespace multipass

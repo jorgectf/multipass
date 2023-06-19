@@ -37,10 +37,9 @@ constexpr auto category = "qemu factory";
 } // namespace
 
 mp::QemuVirtualMachineFactory::QemuVirtualMachineFactory(const mp::Path& data_dir)
-    : BaseVirtualMachineFactory(
-          MP_UTILS.make_dir(QDir(data_dir, get_backend_directory_name()).filePath("vault"), "instances")),
-      qemu_platform{MP_QEMU_PLATFORM_FACTORY.make_qemu_platform(data_dir)}
+    : BaseVirtualMachineFactory(QString{}), qemu_platform{MP_QEMU_PLATFORM_FACTORY.make_qemu_platform(data_dir)}
 {
+    instances_dir = MP_UTILS.make_dir(QDir(data_dir, get_backend_directory_name()).filePath("vault"), "instances");
 }
 
 mp::VirtualMachine::UPtr mp::QemuVirtualMachineFactory::create_virtual_machine(const VirtualMachineDescription& desc,
@@ -123,4 +122,10 @@ QString mp::QemuVirtualMachineFactory::get_backend_directory_name() const
 auto mp::QemuVirtualMachineFactory::networks() const -> std::vector<NetworkInterfaceInfo>
 {
     return qemu_platform->networks();
+}
+
+mp::Path mp::QemuVirtualMachineFactory::make_qemu_platform_and_resolve_instances_dir(const mp::Path& data_dir)
+{
+    qemu_platform = MP_QEMU_PLATFORM_FACTORY.make_qemu_platform(data_dir);
+    return MP_UTILS.make_dir(QDir(data_dir, get_backend_directory_name()).filePath("vault"), "instances");
 }
