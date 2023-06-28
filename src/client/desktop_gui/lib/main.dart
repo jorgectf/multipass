@@ -1,26 +1,22 @@
+import 'package:desktop_gui/grpc_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
-  runApp(const MaterialApp(home: MyHomePage()));
+  runApp(const ProviderScope(child: MaterialApp(home: MyHomePage())));
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends ConsumerWidget {
   const MyHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final infos = ref.watch(vmStatusesProvider);
     return Scaffold(
-      body: Center(child: Text('$_counter')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => _counter++),
-      ),
+      body: Row(children: [
+        for (final MapEntry(key: name, value: status) in infos.entries)
+          Text('$name $status')
+      ]),
     );
   }
 }
