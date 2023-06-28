@@ -34,7 +34,6 @@ public:
 
 private:
     ParseCode parse_args(ArgParser* parser);
-    bool confirm_destruction(const QString& instance_name);
     RestoreRequest request;
 };
 } // namespace multipass::cmd

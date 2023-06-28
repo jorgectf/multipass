@@ -21,6 +21,7 @@
 
 #include <multipass/cli/argparser.h>
 #include <multipass/cli/format_utils.h>
+#include <multipass/cli/prompters.h>
 #include <multipass/constants.h>
 #include <multipass/exceptions/cmd_exceptions.h>
 #include <multipass/exceptions/settings_exceptions.h>
@@ -30,10 +31,22 @@
 
 #include <chrono>
 #include <fmt/ostream.h>
+#include <regex>
 #include <sstream>
 
 namespace mp = multipass;
 namespace cmd = multipass::cmd;
+
+namespace
+{
+const std::regex yes{"y|yes", std::regex::icase | std::regex::optimize};
+const std::regex no{"n|no", std::regex::icase | std::regex::optimize};
+
+mp::ReturnCode ok2retry(mp::ReturnCode code)
+{
+    return code == mp::ReturnCode::Ok ? mp::ReturnCode::Retry : code;
+}
+} // namespace
 
 mp::ParseCode cmd::check_for_name_and_all_option_conflict(const mp::ArgParser* parser, std::ostream& cerr,
                                                           bool allow_empty)
@@ -135,13 +148,17 @@ mp::ReturnCode cmd::run_cmd(const QStringList& args, const mp::ArgParser* parser
     return aux_parser.chosenCommand()->run(&aux_parser);
 }
 
-namespace
+bool cmd::confirm_action(Terminal* term, const std::string& prompt_text)
 {
-mp::ReturnCode ok2retry(mp::ReturnCode code)
-{
-    return code == mp::ReturnCode::Ok ? mp::ReturnCode::Retry : code;
+    static constexpr auto invalid_input = "Please answer Yes/no";
+    mp::PlainPrompter prompter(term);
+
+    auto answer = prompter.prompt(prompt_text);
+    while (!answer.empty() && !std::regex_match(answer, yes) && !std::regex_match(answer, no))
+        answer = prompter.prompt(invalid_input);
+
+    return std::regex_match(answer, yes);
 }
-} // namespace
 
 mp::ReturnCode cmd::run_cmd_and_retry(const QStringList& args, const mp::ArgParser* parser, std::ostream& cout,
                                       std::ostream& cerr)

@@ -50,6 +50,7 @@ ReturnCode run_cmd(const QStringList& args, const ArgParser* parser, std::ostrea
 ReturnCode run_cmd_and_retry(const QStringList& args, const ArgParser* parser, std::ostream& cout, std::ostream& cerr);
 ReturnCode return_code_from(const SettingsException& e);
 QString describe_common_settings_keys();
+bool confirm_action(Terminal* term, const std::string& prompt_text);
 
 // parser helpers
 void add_timeout(multipass::ArgParser*);

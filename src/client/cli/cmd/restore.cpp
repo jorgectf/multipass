@@ -21,19 +21,10 @@
 #include "common_cli.h"
 
 #include <multipass/cli/argparser.h>
-#include <multipass/cli/prompters.h>
 #include <multipass/exceptions/cli_exceptions.h>
-
-#include <regex>
 
 namespace mp = multipass;
 namespace cmd = mp::cmd;
-
-namespace
-{
-const std::regex yes{"y|yes", std::regex::icase | std::regex::optimize};
-const std::regex no{"n|no", std::regex::icase | std::regex::optimize};
-} // namespace
 
 mp::ReturnCode cmd::Restore::run(mp::ArgParser* parser)
 {
@@ -118,7 +109,8 @@ mp::ParseCode cmd::Restore::parse_args(mp::ArgParser* parser)
         {
             try
             {
-                request.set_destructive(confirm_destruction(tokens[0]));
+                request.set_destructive(!confirm_action(term, 
+                    fmt::format("Do you want to take a snapshot of {} before discarding its current state? (Yes/no)", tokens[0])));
             }
             catch (const mp::PromptException& e)
             {
@@ -135,18 +127,4 @@ mp::ParseCode cmd::Restore::parse_args(mp::ArgParser* parser)
     request.set_verbosity_level(parser->verbosityLevel());
 
     return ParseCode::Ok;
-}
-
-bool cmd::Restore::confirm_destruction(const QString& instance_name)
-{
-    static constexpr auto prompt_text =
-        "Do you want to take a snapshot of {} before discarding its current state? (Yes/no)";
-    static constexpr auto invalid_input = "Please answer Yes/no";
-    mp::PlainPrompter prompter(term);
-
-    auto answer = prompter.prompt(fmt::format(prompt_text, instance_name));
-    while (!answer.empty() && !std::regex_match(answer, yes) && !std::regex_match(answer, no))
-        answer = prompter.prompt(invalid_input);
-
-    return std::regex_match(answer, no);
 }

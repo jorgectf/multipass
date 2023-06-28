@@ -104,16 +104,28 @@ mp::ParseCode cmd::Delete::parse_args(mp::ArgParser* parser)
         return parse_code;
 
     request.set_purge(parser->isSet(purge_option));
+
+    bool instance_found = false, snapshot_found = false;
     for (const auto& item : add_instance_and_snapshot_names(parser))
     {
-        if (item.has_snapshot_name() && !request.purge())
-        {
-            cerr << "Snapshots can only be purged (after deletion, they cannot be recovered). Please use the `--purge` "
-                    "flag if that is what you want.\n";
-            return mp::ParseCode::CommandLineError;
-        }
+        instance_found = instance_found || !item.has_snapshot_name();
+        snapshot_found = snapshot_found || item.has_snapshot_name();
 
         request.add_instances_snapshots()->CopyFrom(item);
+    }
+
+    if (!request.purge() && snapshot_found)
+    {
+        cerr << "Snapshots can only be purged (after deletion, they cannot be recovered). Please use the `--purge` "
+                "flag if that is what you want.\n";
+        return mp::ParseCode::CommandLineError;
+    }
+    else if (request.purge() && instance_found && snapshot_found &&
+             !confirm_action(
+                 term, "warning: Specifying both instances and snapshots will also permanently delete instances.\n"
+                       "Are you sure you want to continue? (Yes/no)"))
+    {
+        return mp::ParseCode::CommandFail;
     }
 
     return status;
