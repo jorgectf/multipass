@@ -19,6 +19,7 @@
 #include "common_cli.h"
 
 #include <multipass/cli/argparser.h>
+#include <multipass/exceptions/cli_exceptions.h>
 #include <multipass/platform.h>
 
 namespace mp = multipass;
@@ -120,12 +121,27 @@ mp::ParseCode cmd::Delete::parse_args(mp::ArgParser* parser)
                 "flag if that is what you want.\n";
         return mp::ParseCode::CommandLineError;
     }
-    else if (request.purge() && instance_found && snapshot_found &&
-             !confirm_action(
-                 term, "warning: Specifying both instances and snapshots will also permanently delete instances.\n"
-                       "Are you sure you want to continue? (Yes/no)"))
+    else if (request.purge() && instance_found && snapshot_found)
     {
-        return mp::ParseCode::CommandFail;
+        if (term->is_live())
+        {
+            try
+            {
+                if (!confirm_action(term, "warning: Specifying both instances and snapshots together will also "
+                                          "permanently delete instances.\n"
+                                          "Are you sure you want to continue? (Yes/no)"))
+                    return mp::ParseCode::CommandFail;
+            }
+            catch (const mp::PromptException& e)
+            {
+                std::cerr << e.what() << std::endl;
+                return ParseCode::CommandLineError;
+            }
+        }
+        else
+        {
+            return ParseCode::CommandFail;
+        }
     }
 
     return status;
